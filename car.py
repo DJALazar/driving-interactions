@@ -6,6 +6,12 @@ import theano.tensor.slinalg as ts
 from trajectory import Trajectory
 import feature
 
+"""
+T is the length of the trajectory
+dyn contains the vehicle's state information and input
+
+"""
+
 class Car(object):
     def __init__(self, dyn, x0, color='yellow', T=5):
         self.data0 = {'x0': x0}
@@ -42,6 +48,7 @@ class Car(object):
 class UserControlledCar(Car):
     def __init__(self, *args, **vargs):
         Car.__init__(self, *args, **vargs)
+        # why are the bounds the same in x and y directions?
         self.bounds = [(-1., 1.), (-1., 1.)]
         self.follow = None
         self.fixed_control = None
@@ -49,6 +56,13 @@ class UserControlledCar(Car):
     def fix_control(self, ctrl):
         self.fixed_control = ctrl
         self._fixed_control = ctrl
+    """
+        We can define a fixed control for a vehicle that is defined by a 
+        vector of control inputs.
+
+        We can also define a vehicle to follow, and in that case the inputs
+        to the vehicle are the same as (a clipped version) the inputs to the vehicle it is following.
+    """
     def control(self, steer, gas):
         if self.fixed_control is not None:
             self.u = self.fixed_control[0]
@@ -75,16 +89,26 @@ class SimpleOptimizerCar(Car):
         self.cache = []
         self.index = 0
         self.sync = lambda cache: None
+
+        #self.platoon_behind = None
+
     def reset(self):
         Car.reset(self)
         self.index = 0
     @property
     def reward(self):
         return self._reward
+    """
+    for our simple optimizers reward, take the past reward and add a bounded control reward.
+    """
     @reward.setter
     def reward(self, reward):
         self._reward = reward+100.*feature.bounded_control(self.bounds)
         self.optimizer = None
+    """
+    The control works by every T time steps, solving an optimization problem to set a trajectory.
+    If we don't have any cached inputs left from the last optimization solution, we solve it again.
+    """    
     def control(self, steer, gas):
         print len(self.cache)
         if self.index<len(self.cache):
@@ -97,6 +121,28 @@ class SimpleOptimizerCar(Car):
             self.cache.append(self.u)
             self.sync(self.cache)
         self.index += 1
+
+    """
+    Add method for defining car to get behind for platooning
+    For now our goal is quadratic in distance in x and y from the car to follow
+    """ 
+    """
+
+    @property
+    def platoon_behind(self):
+        return self._platoon_behind
+    #@platoon_behind.setter
+    #def platoon_behind(self, vehicle):
+    #    self._platoon_behind = vehicle
+    @feature.feature
+    def veh_follow(t, x, u):
+        return -((self.traj.x[t][0]-self.platoon_behind.traj.x[t][0])**2 + (self.traj.x[t][1]-self.platoon_behind.traj.x[t][1])**2)
+    @platoon_behind.setter
+    def platoon_behind(self, vehicle):
+        self._platoon_behind = vehicle
+        self._reward =  -100.*veh_follow
+        self.optimizer = None
+    """ 
 
 class NestedOptimizerCar(Car):
     def __init__(self, *args, **vargs):

@@ -5,6 +5,13 @@ import numpy as np
 import feature
 import lane
 
+"""
+x0 is  avector of length nx (number of elements in state vector)
+u is a 2D vector of length T by nu (length of input vector).
+  this is set by the optimizer.
+z 
+"""
+
 class Trajectory(object):
     def __init__(self, T, dyn):
         self.dyn = dyn
@@ -22,6 +29,11 @@ class Trajectory(object):
         for t in range(self.T-1):
             self.u[t].set_value(self.u[t+1].get_value())
         self.u[self.T-1].set_value(np.zeros(self.dyn.nu))
+    """
+    This feature seems to penalize ???
+    d is the difference in the current location and location after t time steps
+    theta is the angle of heading after t time steps
+    """    
     def gaussian(self, height=.07, width=.03):
         @feature.feature
         def f(t, x, u):

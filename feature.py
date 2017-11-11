@@ -1,6 +1,10 @@
 import theano as th
 import theano.tensor as tt
 
+"""
+Define the features in a simple optimizer, such as desired speed, not oversteering, etc.
+"""
+
 class Feature(object):
     def __init__(self, f):
         self.f = f
@@ -26,18 +30,21 @@ class Feature(object):
 def feature(f):
     return Feature(f)
 
+# goal defined by a vehicles desired speed
 def speed(s=1.):
     @feature
     def f(t, x, u):
         return -(x[3]-s)*(x[3]-s)
     return f
 
+# goal of not hitting acceleration/deceleration or steering too hard
 def control():
     @feature
     def f(t, x, u):
         return -u[0]**2-u[1]**2
     return f
 
+#bounds on steering and gas/brake
 def bounded_control(bounds, width=0.05):
     @feature
     def f(t, x, u):
@@ -45,6 +52,14 @@ def bounded_control(bounds, width=0.05):
         for i, (a, b) in enumerate(bounds):
             return -tt.exp((u[i]-b)/width)-tt.exp((a-u[i])/width)
     return f
+
+# Can we put the platooning objective here?
+"""
+def car_follow(veh1, veh2):
+    @feature   
+    def f(t, x, u):
+"""
+         
 
 if __name__ == '__main__':
     pass

@@ -16,7 +16,7 @@ import sys
 from car import Car
 
 class Visualizer(object):
-    def __init__(self, dt=0.5, fullscreen=False, name='unnamed', iters=1000, magnify=1.):
+    def __init__(self, dt=0.5, fullscreen=False, name='unnamed', iters=1000, magnify=0.5):
         self.autoquit = False
         self.frame = None
         self.subframes = None
